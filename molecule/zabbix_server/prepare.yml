@@ -16,7 +16,7 @@
         - ansible_os_family == 'RedHat'
 
     - name: "Apt update"
-      shell: "apt-get update"
+      shell: "apt-get update && echo exit 0 > /usr/sbin/policy-rc.d"
       args:
         warn: False
       register: installation_dependencies
