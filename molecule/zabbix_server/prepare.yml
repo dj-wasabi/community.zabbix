@@ -70,7 +70,9 @@
 
     - name: "Installing MySQL Server"
       apt:
-        name: mysql-server
+        name:
+          - mariadb-server
+          - mariadb-client
         state: present
       when:
         - ansible_os_family != 'RedHat'
