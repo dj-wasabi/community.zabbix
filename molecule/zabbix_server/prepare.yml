@@ -68,8 +68,26 @@
           - postgresql
       changed_when: False
 
+    - name: "Installing MySQL Server"
+      apt:
+        name: mysql-server
+        state: present
+      when:
+        - ansible_os_family != 'RedHat'
+        - inventory_hostname in groups['mysql']
+
+    - name: "Start MySQL"
+      service:
+        name: mysql
+        state: started
+      when:
+        - ansible_os_family != 'RedHat'
+        - inventory_hostname in groups['mysql']
+
   roles:
     - role: geerlingguy.postgresql
       when: inventory_hostname in groups['postgresql']
     - role: geerlingguy.mysql
-      when: inventory_hostname in groups['mysql']
+      when:
+        - ansible_os_family == 'RedHat'
+        - inventory_hostname in groups['mysql']

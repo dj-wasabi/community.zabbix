@@ -32,9 +32,6 @@ provisioner:
         zabbix_server_database: mysql
         zabbix_server_database_long: mysql
         zabbix_server_dbport: 3306
-        # zabbix_server_mysql_login_host: localhost
-        # zabbix_server_mysql_login_user: root
-        # zabbix_server_mysql_login_password: "s3Cur31t4."
       postgresql:
         zabbix_server_database: pgsql
         zabbix_server_database_long: postgresql
