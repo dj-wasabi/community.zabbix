@@ -75,6 +75,7 @@
       register: installation_dependencies
       until: installation_dependencies is succeeded
       with_items:
+        - echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
         - apt-get remove --purge mariadb-server mariadb-client
         - apt-get autoremove
         - apt-get autoclean
