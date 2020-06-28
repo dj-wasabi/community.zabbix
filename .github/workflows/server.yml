@@ -17,26 +17,26 @@ jobs:
       fail-fast: false
       matrix:
         molecule_distro:
-          - container: mysql-centos
-            image: geerlingguy/docker-centos7-ansible:latest
-            group: mysql
-          - container: pgsql-centos
-            image: geerlingguy/docker-centos7-ansible:latest
-            group: postgresql
+          # - container: mysql-centos
+          #   image: geerlingguy/docker-centos7-ansible:latest
+          #   group: mysql
+          # - container: pgsql-centos
+          #   image: geerlingguy/docker-centos7-ansible:latest
+          #   group: postgresql
           - container: mysql-ubuntu
             image: solita/ubuntu-systemd:xenial
             group: mysql
             command: /sbin/init
-          - container: pgsql-ubuntu
-            image: solita/ubuntu-systemd:xenial
-            group: postgresql
-            command: /sbin/init
+          # - container: pgsql-ubuntu
+          #   image: solita/ubuntu-systemd:xenial
+          #   group: postgresql
+          #   command: /sbin/init
           - container: mysql-debian
             image: minimum2scp/systemd-stretch:latest
             group: mysql
-          - container: pgsql-debian
-            image: minimum2scp/systemd-stretch
-            group: postgresql
+          # - container: pgsql-debian
+          #   image: minimum2scp/systemd-stretch
+          #   group: postgresql
         collection_role:
           - zabbix_server
     steps:
