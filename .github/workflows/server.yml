@@ -50,10 +50,26 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo systemctl stop apparmor
           sudo apt install docker
           python -m pip install --upgrade pip
           pip install -r molecule/requirements.txt
+
+     - name: apparmor
+        run: |
+          set -x
+          sudo apt-get remove mysql-server --purge
+          # sudo aa-status
+          ls -l /etc/apparmor.d
+          # sudo cat /etc/apparmor.d/usr.sbin.mysqld
+          # sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          # sudo systemctl reload apparmor
+          # sudo systemctl restart apparmor
+          # sudo systemctl status apparmor 
+          # sudo aa-status
+          sudo systemctl stop apparmor
+          sudo systemctl disable apparmor
+          sudo systemctl restart docker
+          docker info
 
       - name: Build the collection
         run: |
