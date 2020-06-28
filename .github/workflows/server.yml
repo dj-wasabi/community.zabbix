@@ -60,11 +60,12 @@ jobs:
           sudo apt-get remove mysql-server --purge
           # sudo aa-status
           ls -l /etc/apparmor.d
+          ls -l /etc/apparmor.d/disable/
           # sudo cat /etc/apparmor.d/usr.sbin.mysqld
-          # sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+          # sudo rm -f /etc/apparmor.d/usr.sbin.mysqld
           # sudo systemctl reload apparmor
           # sudo systemctl restart apparmor
-          # sudo systemctl status apparmor 
+          # sudo systemctl status apparmor
           # sudo aa-status
           sudo systemctl stop apparmor
           sudo systemctl disable apparmor
