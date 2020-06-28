@@ -78,7 +78,7 @@
         - apt-get remove --purge mariadb-server mariadb-client
         - apt-get autoremove
         - apt-get autoclean
-        - apt-get install mariadb-server mariadb-client
+        - apt-get install -y mariadb-server mariadb-client
       when:
         - ansible_os_family != 'RedHat'
         - inventory_hostname in groups['mysql']
