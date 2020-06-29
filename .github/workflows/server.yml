@@ -24,7 +24,7 @@ jobs:
           #   image: geerlingguy/docker-centos7-ansible:latest
           #   group: postgresql
           - container: mysql-ubuntu
-            image: solita/ubuntu-systemd:xenial
+            image: sameersbn/mysql:5.7.26-0
             group: mysql
             command: /sbin/init
           # - container: pgsql-ubuntu
