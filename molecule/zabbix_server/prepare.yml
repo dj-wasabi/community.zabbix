@@ -64,8 +64,8 @@
       shell: "{{ item }}"
       args:
         warn: False
-      register: installation_dependencies
-      until: installation_dependencies is succeeded
+      # register: installation_dependencies
+      # until: installation_dependencies is succeeded
       with_items:
         - echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
         - apt-get remove mysql* mariadb*
