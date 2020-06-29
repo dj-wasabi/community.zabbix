@@ -68,9 +68,9 @@
       # until: installation_dependencies is succeeded
       with_items:
         - echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
-        - apt-get remove mysql* mariadb*
-        - apt-get clean
         - apt-get remove --purge mysql* mariadb*
+        - apt-get remove --purge mysql mariadb mariadb-server python-software-properties
+        - apt-get clean
         - apt-get autoremove
         - apt-get autoclean
         - apt-get update
