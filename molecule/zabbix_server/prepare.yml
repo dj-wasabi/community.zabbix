@@ -67,17 +67,11 @@
       # register: installation_dependencies
       # until: installation_dependencies is succeeded
       with_items:
-        - echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
-        - apt-get remove --purge mysql* mariadb*
-        - apt-get remove --purge mariadb-server python-software-properties
         - rm -rf /var/lib/mysql
         - apt-get clean
         - apt-get autoremove
         - apt-get autoclean
         - apt-get update
-        - echo -n "/usr/sbin/mysqld" | sudo tee /sys/kernel/security/apparmor/.remove
-        - apt install -f
-        - apparmor_parser -r /etc/apparmor.d/usr.sbin.mysqld
         - DEBIAN_FRONTEND=noninteractive apt-get install -y -q mariadb-server mariadb-client
       when:
         - ansible_os_family != 'RedHat'
