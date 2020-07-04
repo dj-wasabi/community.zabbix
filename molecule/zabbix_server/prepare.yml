@@ -60,31 +60,6 @@
           - postgresql
       changed_when: False
 
-    # - name: "Installing MySQL Server"
-    #   shell: "{{ item }}"
-    #   args:
-    #     warn: False
-    #   # register: installation_dependencies
-    #   # until: installation_dependencies is succeeded
-    #   with_items:
-    #     - rm -rf /var/lib/mysql
-    #     - apt-get clean
-    #     - apt-get autoremove
-    #     - apt-get autoclean
-    #     - apt-get update
-    #     - DEBIAN_FRONTEND=noninteractive apt-get install -y -q mariadb-server mariadb-client
-    #   when:
-    #     - ansible_os_family != 'RedHat'
-    #     - inventory_hostname in groups['mysql']
-
-    # - name: "Start MySQL"
-    #   service:
-    #     name: mysql
-    #     state: started
-    #   when:
-    #     - ansible_os_family != 'RedHat'
-    #     - inventory_hostname in groups['mysql']
-
     - name: PyMySQL
       pip:
         name: PyMySQL

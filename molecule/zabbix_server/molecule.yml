@@ -15,7 +15,8 @@ platforms:
     security_opts:
       - seccomp=unconfined
     privileged: True
-    # pre_build_image: true
+    networks:
+      - name: zabbix
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
     groups:
@@ -34,11 +35,11 @@ provisioner:
         zabbix_server_database: mysql
         zabbix_server_database_long: mysql
         zabbix_server_dbport: 3306
-        zabbix_server_mysql_login_host: localhost
+        zabbix_server_mysql_login_host: mysql-host
         zabbix_server_mysql_login_user: root
-        zabbix_server_mysql_login_password:
+        zabbix_server_mysql_login_password: changeme
         zabbix_server_mysql_login_port: 3306
-        zabbix_server_mysql_login_unix_socket: /var/run/mysqld/mysqld.sock
+        # zabbix_server_mysql_login_unix_socket: /var/run/mysqld/mysqld.sock
       postgresql:
         zabbix_server_database: pgsql
         zabbix_server_database_long: postgresql
