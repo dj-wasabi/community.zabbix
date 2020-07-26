@@ -17,25 +17,25 @@ jobs:
       fail-fast: false
       matrix:
         molecule_distro:
-          # - container: mysql-centos
-          #   image: geerlingguy/docker-centos7-ansible:latest
-          #   group: mysql
-          # - container: pgsql-centos
-          #   image: geerlingguy/docker-centos7-ansible:latest
-          #   group: postgresql
+          - container: mysql-centos
+            image: geerlingguy/docker-centos8-ansible:latest
+            group: mysql
+          - container: pgsql-centos
+            image: geerlingguy/docker-centos8-ansible:latest
+            group: postgresql
           - container: mysql-ubuntu
-            image: sameersbn/mysql:5.7.26-0
+            image: geerlingguy/docker-ubuntu2004-ansible
             group: mysql
-          # - container: pgsql-ubuntu
-          #   image: solita/ubuntu-systemd:xenial
-          #   group: postgresql
-          #   command: /sbin/init
+          - container: pgsql-ubuntu
+            image: geerlingguy/docker-ubuntu2004-ansible
+            group: postgresql
+            command: /sbin/init
           - container: mysql-debian
-            image: minimum2scp/systemd-stretch:latest
+            image: geerlingguy/docker-debian9-ansible
             group: mysql
-          # - container: pgsql-debian
-          #   image: minimum2scp/systemd-stretch
-          #   group: postgresql
+          - container: pgsql-debian
+            image: geerlingguy/docker-debian9-ansible
+            group: postgresql
         collection_role:
           - zabbix_server
     steps:
@@ -52,24 +52,6 @@ jobs:
           sudo apt install docker
           python -m pip install --upgrade pip
           pip install -r molecule/requirements.txt
-
-      - name: apparmor
-        run: |
-          set -x
-          sudo apt-get remove mysql-server --purge
-          # sudo aa-status
-          ls -l /etc/apparmor.d
-          ls -l /etc/apparmor.d/disable/
-          # sudo cat /etc/apparmor.d/usr.sbin.mysqld
-          # sudo rm -f /etc/apparmor.d/usr.sbin.mysqld
-          # sudo systemctl reload apparmor
-          # sudo systemctl restart apparmor
-          # sudo systemctl status apparmor
-          # sudo aa-status
-          sudo systemctl stop apparmor
-          sudo systemctl disable apparmor
-          sudo systemctl restart docker
-          docker info
 
       - name: Build the collection
         run: |

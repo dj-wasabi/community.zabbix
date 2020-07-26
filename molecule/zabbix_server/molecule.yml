@@ -12,8 +12,6 @@ platforms:
   - name: zabbix-server-${MY_MOLECULE_CONTAINER:-mysql-centos}
     image: ${MY_MOLECULE_IMAGE:-"milcom/centos7-systemd"}
     command: ${MY_MOLECULE_DOCKER_COMMAND:-""}
-    security_opts:
-      - seccomp=unconfined
     privileged: True
     networks:
       - name: zabbix
@@ -43,6 +41,9 @@ provisioner:
       postgresql:
         zabbix_server_database: pgsql
         zabbix_server_database_long: postgresql
+        zabbix_server_pgsql_login_host: postgresql-host
+        zabbix_server_pgsql_login_user: postgres
+        zabbix_server_pgsql_login_password: changeme
 
 verifier:
   name: testinfra

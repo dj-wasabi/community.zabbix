@@ -9,8 +9,6 @@
     delegated_dbhost: "{{ zabbix_server_real_dbhost }}"
   when: zabbix_server_real_dbhost | default(false)
 
-
-
 - name: "MySQL | Create database"
   mysql_db:
     name: "{{ zabbix_server_dbname }}"
@@ -58,10 +56,6 @@
   tags:
     - zabbix-server
     - database
-
-- name: "Print debig"
-  debug:
-    var: ls_output_create
 
 - name: "Check if we have done files >= 3.0"
   stat:
