@@ -7,7 +7,7 @@
     - name: "Create MySQL Container"
       docker_container:
         name: mysql-host
-        image: mysql
+        image: mysql:5.7
         state: started
         recreate: yes
         networks:
@@ -42,8 +42,8 @@
         name:
           - net-tools
           - which
-          # - libselinux-python
           - sudo
+          - "{{ 'mysql' if inventory_hostname in groups['mysql'] }}"
         state: present
       register: installation_dependencies
       until: installation_dependencies is succeeded
@@ -67,6 +67,7 @@
           - python3-pip
           - gpg-agent
           - sudo
+          - "{{ 'mysql' if inventory_hostname in groups['mysql'] }}"
         update_cache: True
         state: present
       register: installation_dependencies

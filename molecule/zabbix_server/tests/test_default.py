@@ -51,3 +51,12 @@ def test_zabbix_include_dir(host):
     assert zabbix_include_dir.user == "zabbix"
     assert zabbix_include_dir.group == "zabbix"
     # assert zabbix_include_dir.mode == 0o644
+
+
+def test_zabbix_server_logfile(host):
+    zabbix_logfile = host.file("/var/log/zabbix/zabbix_server.log")
+
+    assert not zabbix_logfile.contains('Access denied for user')
+    assert not zabbix_logfile.contains('database is down: reconnecting')
+    assert zabbix_logfile.contains('current database version')
+    assert zabbix_logfile.contains("server #0 started \[main process\]")
