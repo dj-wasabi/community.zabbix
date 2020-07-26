@@ -37,6 +37,15 @@
 - name: Prepare
   hosts: all
   tasks:
+
+    - name: "Create group for imaginary host"
+      add_host:
+        name: imaginary-host
+        groups:
+          - mysql
+          - postgresql
+      changed_when: False
+
     - name: "Installing packages on CentOS"
       yum:
         name:
@@ -88,14 +97,6 @@
         state: absent
       when:
         - ansible_os_family == 'RedHat'
-
-    - name: "Create group for imaginary host"
-      add_host:
-        name: imaginary-host
-        groups:
-          - mysql
-          - postgresql
-      changed_when: False
 
     - name: PyMySQL
       pip:
