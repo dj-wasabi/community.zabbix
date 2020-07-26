@@ -33,6 +33,9 @@ provisioner:
         zabbix_server_database: mysql
         zabbix_server_database_long: mysql
         zabbix_server_dbport: 3306
+        zabbix_server_dbhost: mysql-host
+        zabbix_server_dbhost_run_install: false
+        zabbix_server_privileged_host: '%'
         zabbix_server_mysql_login_host: mysql-host
         zabbix_server_mysql_login_user: root
         zabbix_server_mysql_login_password: changeme
@@ -41,9 +44,13 @@ provisioner:
       postgresql:
         zabbix_server_database: pgsql
         zabbix_server_database_long: postgresql
+        zabbix_server_dbport: 5432
+        zabbix_server_dbhost: postgresql-host
+        zabbix_server_dbhost_run_install: false
         zabbix_server_pgsql_login_host: postgresql-host
         zabbix_server_pgsql_login_user: postgres
         zabbix_server_pgsql_login_password: changeme
+        zabbix_server_pgsql_login_port: 5432
 
 verifier:
   name: testinfra

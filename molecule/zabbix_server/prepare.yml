@@ -14,7 +14,7 @@
           - name: zabbix
         env:
           MYSQL_ROOT_PASSWORD: changeme
-      # no_log: false
+      no_log: true
       with_items: "{{ molecule_yml.platforms }}"
       when:
         - '"mysql" in item.groups'
@@ -29,7 +29,7 @@
           - name: zabbix
         env:
           POSTGRES_PASSWORD: changeme
-      # no_log: false
+      no_log: true
       with_items: "{{ molecule_yml.platforms }}"
       when:
         - '"postgresql" in item.groups'
@@ -96,6 +96,10 @@
           - postgresql
       changed_when: False
 
-#   # roles:
-#   #   - role: geerlingguy.postgresql
-#   #     when: inventory_hostname in groups['postgresql']
+    - name: PyMySQL
+      pip:
+        name: PyMySQL
+      register: installation_dependencies
+      until: installation_dependencies is succeeded
+      when:
+        - inventory_hostname in groups['mysql']

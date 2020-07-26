@@ -28,10 +28,10 @@ def test_zabbix_package(host, server):
     if zabbixhost == server:
         if host.system_info.distribution in ['debian', 'ubuntu']:
             zabbix_server = host.package(server)
-            assert zabbix_server.version.startswith("1:4.4")
+            assert zabbix_server.version.startswith("1:5.0")
         elif host.system_info.distribution == 'centos':
             zabbix_server = host.package(server)
-            assert zabbix_server.version.startswith("4.4")
+            assert zabbix_server.version.startswith("5.0")
         assert zabbix_server.is_installed
 
 
@@ -42,7 +42,6 @@ def test_zabbix_server_dot_conf(host):
     assert zabbix_server_conf.mode == 0o640
 
     assert zabbix_server_conf.contains("ListenPort=10051")
-    assert zabbix_server_conf.contains("DBHost=localhost")
     assert zabbix_server_conf.contains("DebugLevel=3")
 
 
