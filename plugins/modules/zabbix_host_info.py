@@ -100,14 +100,15 @@ EXAMPLES = r'''
 import atexit
 import traceback
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
-
 try:
     from zabbix_api import ZabbixAPI
+
     HAS_ZABBIX_API = True
 except ImportError:
     ZBX_IMP_ERR = traceback.format_exc()
     HAS_ZABBIX_API = False
+
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 
 class Host(object):
@@ -190,7 +191,8 @@ def main():
         supports_check_mode=True
     )
     if module._name == 'zabbix_host_facts':
-        module.deprecate("The 'zabbix_host_facts' module has been renamed to 'zabbix_host_info'", version='2.13')
+        module.deprecate("The 'zabbix_host_facts' module has been renamed to 'zabbix_host_info'",
+                         collection_name="community.zabbix", version='2.0.0')  # was 2.13
 
     if not HAS_ZABBIX_API:
         module.fail_json(msg=missing_required_lib('zabbix-api', url='https://pypi.org/project/zabbix-api/'), exception=ZBX_IMP_ERR)

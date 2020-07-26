@@ -430,6 +430,7 @@ import traceback
 
 try:
     from zabbix_api import ZabbixAPI
+
     HAS_ZABBIX_API = True
 except ImportError:
     ZBX_IMP_ERR = traceback.format_exc()
@@ -924,6 +925,22 @@ class Host(object):
             self._module.fail_json(msg="Failed to set inventory to host: %s" % e)
 
 
+def normalize_macro_name(macro_name):
+    # Zabbix handles macro names in upper case characters
+    if ':' in macro_name:
+        macro_name = ':'.join([macro_name.split(':')[0].upper(), ':'.join(macro_name.split(':')[1:])])
+    else:
+        macro_name = macro_name.upper()
+
+    # Valid format for macro is {$MACRO}
+    if not macro_name.startswith('{$'):
+        macro_name = '{$' + macro_name
+    if not macro_name.endswith('}'):
+        macro_name = macro_name + '}'
+
+    return macro_name
+
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -1062,6 +1079,7 @@ def main():
         module.fail_json(msg="Failed to connect to Zabbix server: %s" % e)
 
     host = Host(module, zbx)
+    zbx_api_version = zbx.api_version()[:5]
 
     template_ids = []
     if link_templates:
@@ -1077,17 +1095,14 @@ def main():
     if macros:
         # convert macros to zabbix native format - {$MACRO}
         for macro in macros:
-            macro['macro'] = macro['macro'].upper()
-            if not macro['macro'].startswith('{$'):
-                macro['macro'] = '{$' + macro['macro']
-            if not macro['macro'].endswith('}'):
-                macro['macro'] = macro['macro'] + '}'
-            if LooseVersion(zbx.api_version()[:5]) <= LooseVersion('4.4.0'):
+            macro['macro'] = normalize_macro_name(macro['macro'])
+
+            if LooseVersion(zbx_api_version) <= LooseVersion('4.4.0'):
                 if 'description' in macro:
                     macro.pop('description', False)
 
             if 'type' in macro:
-                if LooseVersion(zbx.api_version()[:5]) < LooseVersion('5.0.0'):
+                if LooseVersion(zbx_api_version) < LooseVersion('5.0.0'):
                     macro.pop('type')
                 else:
                     if macro['type'] == 'text':

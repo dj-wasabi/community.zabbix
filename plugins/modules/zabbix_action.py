@@ -63,10 +63,11 @@ options:
         required: false
     conditions:
         type: list
+        elements: dict
         description:
-            - List of dictionaries of conditions to evaluate.
+            - List of conditions to use for filtering results.
             - For more information about suboptions of this option please
-              check out Zabbix API documentation U(https://www.zabbix.com/documentation/4.0/manual/api/reference/action/object#action_filter_condition)
+              check out Zabbix API documentation U(https://www.zabbix.com/documentation/5.0/manual/api/reference/action/object#action_filter_condition)
         suboptions:
             type:
                 description:
@@ -158,7 +159,7 @@ options:
                 description:
                     - Arbitrary unique ID that is used to reference the condition from a custom expression.
                     - Can only contain upper-case letters.
-                    - Required for custom expression filters.
+                    - Required for custom expression filters and ignored otherwise.
     eval_type:
         description:
             - Filter condition evaluation method.
@@ -172,11 +173,11 @@ options:
             - 'custom_expression'
     formula:
         description:
-            - User-defined expression to be used for evaluating conditions of filters with a custom expression.
-            - The expression must contain IDs that reference specific filter conditions by its formulaid.
+            - User-defined expression to be used for evaluating conditions with a custom expression.
+            - The expression must contain IDs that reference each condition by its formulaid.
             - The IDs used in the expression must exactly match the ones
-              defined in the filter conditions. No condition can remain unused or omitted.
-            - Required for custom expression filters.
+              defined in the I(conditions). No condition can remain unused or omitted.
+            - Required when I(eval_type=custom_expression).
             - Use sequential IDs that start at "A". If non-sequential IDs are used, Zabbix re-indexes them.
               This makes each module run notice the difference in IDs and update the action.
     default_message:
@@ -250,6 +251,7 @@ options:
             esc_step_to:
                 description:
                     - Step to end escalation at.
+                    - Specify 0 for infinitely.
                 default: 1
             send_to_groups:
                 type: list
@@ -270,6 +272,7 @@ options:
             media_type:
                 description:
                     - Media type that will be used to send the message.
+                    - Can be used with I(type=send_message) or I(type=notify_all_involved) inside I(acknowledge_operations).
                     - Set to C(all) for all media types
                 default: 'all'
             operation_condition:
@@ -293,6 +296,9 @@ options:
                 description:
                     - Host inventory mode.
                     - Required when I(type=set_host_inventory_mode).
+                choices:
+                    - manual
+                    - automatic
             command_type:
                 description:
                     - Type of operation command.
@@ -318,11 +324,11 @@ options:
             run_on_groups:
                 description:
                     - Host groups to run remote commands on.
-                    - Required when I(type=remote_command) if I(run_on_hosts) is not set.
+                    - Required when I(type=remote_command) and I(run_on_hosts) is not set.
             run_on_hosts:
                 description:
                     - Hosts to run remote commands on.
-                    - Required when I(type=remote_command) if I(run_on_groups) is not set.
+                    - Required when I(type=remote_command) and I(run_on_groups) is not set.
                     - If set to 0 the command will be run on the current host.
             ssh_auth_type:
                 description:
@@ -334,27 +340,32 @@ options:
             ssh_privatekey_file:
                 description:
                     - Name of the private key file used for SSH commands with public key authentication.
-                    - Required when I(type=remote_command) and I(command_type=ssh).
+                    - Required when I(ssh_auth_type=public_key).
+                    - Can be used when I(type=remote_command).
             ssh_publickey_file:
                 description:
                     - Name of the public key file used for SSH commands with public key authentication.
-                    - Required when I(type=remote_command) and I(command_type=ssh).
+                    - Required when I(ssh_auth_type=public_key).
+                    - Can be used when I(type=remote_command).
             username:
                 description:
                     - User name used for authentication.
-                    - Required when I(type=remote_command) and I(command_type in [ssh, telnet]).
+                    - Required when I(ssh_auth_type in [public_key, password]) or I(command_type=telnet).
+                    - Can be used when I(type=remote_command).
             password:
                 description:
                     - Password used for authentication.
-                    - Required when I(type=remote_command) and I(command_type in [ssh, telnet]).
+                    - Required when I(ssh_auth_type=password) or I(command_type=telnet).
+                    - Can be used when I(type=remote_command).
             port:
                 description:
                     - Port number used for authentication.
-                    - Required when I(type=remote_command) and I(command_type in [ssh, telnet]).
+                    - Can be used when I(command_type in [ssh, telnet]) and I(type=remote_command).
             script_name:
                 description:
                     - The name of script used for global script commands.
-                    - Required when I(type=remote_command) and I(command_type=global_script).
+                    - Required when I(command_type=global_script).
+                    - Can be used when I(type=remote_command).
     recovery_operations:
         type: list
         description:
@@ -486,13 +497,14 @@ import traceback
 
 try:
     from zabbix_api import ZabbixAPI
+
     HAS_ZABBIX_API = True
 except ImportError:
     ZBX_IMP_ERR = traceback.format_exc()
     HAS_ZABBIX_API = False
 
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 from distutils.version import LooseVersion
+from ansible.module_utils.basic import AnsibleModule, missing_required_lib
 
 
 class Zapi(object):
@@ -520,7 +532,6 @@ class Zapi(object):
                 "selectRecoveryOperations": "extend",
                 "selectAcknowledgeOperations": "extend",
                 "selectFilter": "extend",
-                'selectInventory': 'extend',
                 'filter': {'name': [name]}
             })
             if len(_action) > 0:
@@ -543,7 +554,6 @@ class Zapi(object):
         try:
             action_list = self._zapi.action.get({
                 'output': 'extend',
-                'selectInventory': 'extend',
                 'filter': {'name': [name]}
             })
             if len(action_list) < 1:
@@ -589,7 +599,6 @@ class Zapi(object):
         try:
             hostgroup_list = self._zapi.hostgroup.get({
                 'output': 'extend',
-                'selectInventory': 'extend',
                 'filter': {'name': [hostgroup_name]}
             })
             if len(hostgroup_list) < 1:
@@ -612,7 +621,6 @@ class Zapi(object):
         try:
             template_list = self._zapi.template.get({
                 'output': 'extend',
-                'selectInventory': 'extend',
                 'filter': {'host': [template_name]}
             })
             if len(template_list) < 1:
@@ -635,7 +643,6 @@ class Zapi(object):
         try:
             trigger_list = self._zapi.trigger.get({
                 'output': 'extend',
-                'selectInventory': 'extend',
                 'filter': {'description': [trigger_name]}
             })
             if len(trigger_list) < 1:
@@ -658,7 +665,6 @@ class Zapi(object):
         try:
             discovery_rule_list = self._zapi.drule.get({
                 'output': 'extend',
-                'selectInventory': 'extend',
                 'filter': {'name': [discovery_rule_name]}
             })
             if len(discovery_rule_list) < 1:
@@ -681,7 +687,6 @@ class Zapi(object):
         try:
             discovery_check_list = self._zapi.dcheck.get({
                 'output': 'extend',
-                'selectInventory': 'extend',
                 'filter': {'name': [discovery_check_name]}
             })
             if len(discovery_check_list) < 1:
@@ -704,7 +709,6 @@ class Zapi(object):
         try:
             proxy_list = self._zapi.proxy.get({
                 'output': 'extend',
-                'selectInventory': 'extend',
                 'filter': {'host': [proxy_name]}
             })
             if len(proxy_list) < 1:
@@ -734,7 +738,6 @@ class Zapi(object):
                 return '0'
             mediatype_list = self._zapi.mediatype.get({
                 'output': 'extend',
-                'selectInventory': 'extend',
                 'filter': filter
             })
             if len(mediatype_list) < 1:
@@ -757,8 +760,7 @@ class Zapi(object):
         try:
             user_list = self._zapi.user.get({
                 'output': 'extend',
-                'selectInventory':
-                'extend', 'filter': {'alias': [user_name]}
+                'filter': {'alias': [user_name]}
             })
             if len(user_list) < 1:
                 self._module.fail_json(msg="User not found: %s" % user_name)
@@ -780,7 +782,6 @@ class Zapi(object):
         try:
             usergroup_list = self._zapi.usergroup.get({
                 'output': 'extend',
-                'selectInventory': 'extend',
                 'filter': {'name': [usergroup_name]}
             })
             if len(usergroup_list) < 1:
@@ -806,7 +807,6 @@ class Zapi(object):
                 return {}
             script_list = self._zapi.script.get({
                 'output': 'extend',
-                'selectInventory': 'extend',
                 'filter': {'name': [script_name]}
             })
             if len(script_list) < 1:
@@ -873,6 +873,9 @@ class Action(object):
             _params.pop('def_shortdata', None)
             _params.pop('r_longdata', None)
             _params.pop('r_shortdata', None)
+
+        if (LooseVersion(self._zbx_api_version) < LooseVersion('3.4')
+                or LooseVersion(self._zbx_api_version) >= LooseVersion('5.0')):
             _params.pop('ack_longdata', None)
             _params.pop('ack_shortdata', None)
 
@@ -977,7 +980,7 @@ class Operations(object):
                 "disable_host",
                 "set_host_inventory_mode"], operation['type']
             )
-        except Exception as e:
+        except Exception:
             self._module.fail_json(msg="Unsupported value '%s' for operation type." % operation['type'])
 
     def _construct_opmessage(self, operation):
@@ -991,7 +994,7 @@ class Operations(object):
         """
         try:
             return {
-                'default_msg': '0' if operation.get('message') is not None or operation.get('subject')is not None else '1',
+                'default_msg': '0' if operation.get('message') is not None or operation.get('subject') is not None else '1',
                 'mediatypeid': self._zapi_wrapper.get_mediatype_by_mediatype_name(
                     operation.get('media_type')
                 ) if operation.get('media_type') is not None else '0',
@@ -1058,8 +1061,8 @@ class Operations(object):
                 ).get('scriptid'),
                 'authtype': to_numeric_value([
                     'password',
-                    'private_key'
-                ], operation.get('ssh_auth_type', 'password')),
+                    'public_key'
+                ], operation.get('ssh_auth_type')),
                 'privatekey': operation.get('ssh_privatekey_file'),
                 'publickey': operation.get('ssh_publickey_file'),
                 'username': operation.get('username'),
@@ -1134,7 +1137,12 @@ class Operations(object):
         Returns:
             dict: constructed operation inventory
         """
-        return {'inventory_mode': operation.get('inventory')}
+        return {
+            'inventory_mode': to_numeric_value([
+                'manual',
+                'automatic'
+            ], operation.get('inventory'))
+        }
 
     def _construct_opconditions(self, operation):
         """Construct operation conditions.
@@ -1235,7 +1243,7 @@ class RecoveryOperations(Operations):
                 None,
                 "notify_all_involved"], operation['type']
             )
-        except Exception as e:
+        except Exception:
             self._module.fail_json(msg="Unsupported value '%s' for recovery operation type." % operation['type'])
 
     def construct_the_data(self, operations):
@@ -1300,7 +1308,7 @@ class AcknowledgeOperations(Operations):
                 None,
                 "notify_all_involved"], operation['type']
             )
-        except Exception as e:
+        except Exception:
             self._module.fail_json(msg="Unsupported value '%s' for acknowledge operation type." % operation['type'])
 
     def construct_the_data(self, operations):
@@ -1432,7 +1440,7 @@ class Filter(object):
                 "event_tag",
                 "event_tag_value"], _condition['type']
             )
-        except Exception as e:
+        except Exception:
             self._module.fail_json(msg="Unsupported value '%s' for condition type." % _condition['type'])
 
     def _construct_operator(self, _condition):
@@ -1459,7 +1467,7 @@ class Filter(object):
                 "Yes",
                 "No"], _condition['operator']
             )
-        except Exception as e:
+        except Exception:
             self._module.fail_json(msg="Unsupported value '%s' for operator." % _condition['operator'])
 
     def _construct_value(self, conditiontype, value):
@@ -1555,7 +1563,7 @@ class Filter(object):
                     "trigger in normal state"], value
                 )
             return value
-        except Exception as e:
+        except Exception:
             self._module.fail_json(
                 msg="""Unsupported value '%s' for specified condition type.
                        Check out Zabbix API documentation for supported values for
@@ -1623,6 +1631,9 @@ def to_numeric_value(strs, value):
     Returns:
         int: converted integer
     """
+    if value is None:
+        return value
+
     strs = [s.lower() if isinstance(s, str) else s for s in strs]
     value = value.lower()
     tmp_dict = dict(zip(strs, list(range(len(strs)))))
@@ -1809,12 +1820,7 @@ def main():
                     run_on_groups=dict(type='list', required=False),
                     run_on_hosts=dict(type='list', required=False),
                     script_name=dict(type='str', required=False),
-                    ssh_auth_type=dict(
-                        type='str',
-                        required=False,
-                        default='password',
-                        choices=['password', 'public_key']
-                    ),
+                    ssh_auth_type=dict(type='str', required=False, choices=['password', 'public_key']),
                     ssh_privatekey_file=dict(type='str', required=False),
                     ssh_publickey_file=dict(type='str', required=False),
                     username=dict(type='str', required=False),
@@ -1827,33 +1833,19 @@ def main():
                     # when type is add_to_host_group or remove_from_host_group
                     host_groups=dict(type='list', required=False),
                     # when type is set_host_inventory_mode
-                    inventory=dict(type='str', required=False),
+                    inventory=dict(type='str', required=False, choices=['manual', 'automatic']),
                     # when type is link_to_template or unlink_from_template
                     templates=dict(type='list', required=False)
                 ),
                 required_if=[
                     ['type', 'remote_command', ['command_type']],
                     ['type', 'remote_command', ['run_on_groups', 'run_on_hosts'], True],
-                    ['command_type', 'custom_script', [
-                        'command',
-                        'execute_on'
-                    ]],
+                    ['command_type', 'custom_script', ['command', 'execute_on']],
                     ['command_type', 'ipmi', ['command']],
-                    ['command_type', 'ssh', [
-                        'command',
-                        'password',
-                        'username',
-                        'port',
-                        'ssh_auth_type',
-                        'ssh_privatekey_file',
-                        'ssh_publickey_file'
-                    ]],
-                    ['command_type', 'telnet', [
-                        'command',
-                        'password',
-                        'username',
-                        'port'
-                    ]],
+                    ['command_type', 'ssh', ['command', 'ssh_auth_type']],
+                    ['ssh_auth_type', 'password', ['username', 'password']],
+                    ['ssh_auth_type', 'public_key', ['username', 'ssh_privatekey_file', 'ssh_publickey_file']],
+                    ['command_type', 'telnet', ['command', 'username', 'password']],
                     ['command_type', 'global_script', ['script_name']],
                     ['type', 'add_to_host_group', ['host_groups']],
                     ['type', 'remove_from_host_group', ['host_groups']],
@@ -1901,12 +1893,7 @@ def main():
                     run_on_groups=dict(type='list', required=False),
                     run_on_hosts=dict(type='list', required=False),
                     script_name=dict(type='str', required=False),
-                    ssh_auth_type=dict(
-                        type='str',
-                        required=False,
-                        default='password',
-                        choices=['password', 'public_key']
-                    ),
+                    ssh_auth_type=dict(type='str', required=False, choices=['password', 'public_key']),
                     ssh_privatekey_file=dict(type='str', required=False),
                     ssh_publickey_file=dict(type='str', required=False),
                     username=dict(type='str', required=False),
@@ -1928,21 +1915,10 @@ def main():
                         'execute_on'
                     ]],
                     ['command_type', 'ipmi', ['command']],
-                    ['command_type', 'ssh', [
-                        'command',
-                        'password',
-                        'username',
-                        'port',
-                        'ssh_auth_type',
-                        'ssh_privatekey_file',
-                        'ssh_publickey_file'
-                    ]],
-                    ['command_type', 'telnet', [
-                        'command',
-                        'password',
-                        'username',
-                        'port'
-                    ]],
+                    ['command_type', 'ssh', ['command', 'ssh_auth_type']],
+                    ['ssh_auth_type', 'password', ['username', 'password']],
+                    ['ssh_auth_type', 'public_key', ['username', 'ssh_privatekey_file', 'ssh_publickey_file']],
+                    ['command_type', 'telnet', ['command', 'username', 'password']],
                     ['command_type', 'global_script', ['script_name']],
                     ['type', 'send_message', ['send_to_users', 'send_to_groups'], True]
                 ]
@@ -1986,12 +1962,7 @@ def main():
                     run_on_groups=dict(type='list', required=False),
                     run_on_hosts=dict(type='list', required=False),
                     script_name=dict(type='str', required=False),
-                    ssh_auth_type=dict(
-                        type='str',
-                        required=False,
-                        default='password',
-                        choices=['password', 'public_key']
-                    ),
+                    ssh_auth_type=dict(type='str', required=False, choices=['password', 'public_key']),
                     ssh_privatekey_file=dict(type='str', required=False),
                     ssh_publickey_file=dict(type='str', required=False),
                     username=dict(type='str', required=False),
@@ -2013,21 +1984,10 @@ def main():
                         'execute_on'
                     ]],
                     ['command_type', 'ipmi', ['command']],
-                    ['command_type', 'ssh', [
-                        'command',
-                        'password',
-                        'username',
-                        'port',
-                        'ssh_auth_type',
-                        'ssh_privatekey_file',
-                        'ssh_publickey_file'
-                    ]],
-                    ['command_type', 'telnet', [
-                        'command',
-                        'password',
-                        'username',
-                        'port'
-                    ]],
+                    ['command_type', 'ssh', ['command', 'ssh_auth_type']],
+                    ['ssh_auth_type', 'password', ['username', 'password']],
+                    ['ssh_auth_type', 'public_key', ['username', 'ssh_privatekey_file', 'ssh_publickey_file']],
+                    ['command_type', 'telnet', ['command', 'username', 'password']],
                     ['command_type', 'global_script', ['script_name']],
                     ['type', 'send_message', ['send_to_users', 'send_to_groups'], True]
                 ]

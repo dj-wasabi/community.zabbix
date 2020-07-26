@@ -110,7 +110,7 @@ options:
             - On C(state=present) template will be created/imported or updated depending if it is already present.
             - On C(state=dump) template content will get dumped into required format specified in I(dump_format).
             - On C(state=absent) template will be deleted.
-            - The C(state=dump) is deprecated and will eventually be removed in 2.14. The M(zabbix_template_info) module should be used instead.
+            - The C(state=dump) is deprecated and will be removed in 2.14. The M(community.zabbix.zabbix_template_info) module should be used instead.
         required: false
         choices: [present, absent, dump]
         default: "present"
@@ -304,29 +304,19 @@ template_xml:
 '''
 
 
-import atexit
 import json
 import traceback
 import xml.etree.ElementTree as ET
 
 from distutils.version import LooseVersion
-from ansible.module_utils.basic import AnsibleModule, missing_required_lib
+from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
 
-try:
-    from zabbix_api import ZabbixAPI, ZabbixAPIException
-
-    HAS_ZABBIX_API = True
-except ImportError:
-    ZBX_IMP_ERR = traceback.format_exc()
-    HAS_ZABBIX_API = False
+from ansible_collections.community.zabbix.plugins.module_utils.base import ZabbixBase
+import ansible_collections.community.zabbix.plugins.module_utils.helpers as zabbix_utils
 
 
-class Template(object):
-    def __init__(self, module, zbx):
-        self._module = module
-        self._zapi = zbx
-
+class Template(ZabbixBase):
     # check if host group exists
     def check_host_group_exist(self, group_names):
         for group_name in group_names:
@@ -342,9 +332,7 @@ class Template(object):
         if group_names is None or len(group_names) == 0:
             return group_ids
         if self.check_host_group_exist(group_names):
-            group_list = self._zapi.hostgroup.get(
-                {'output': 'extend',
-                 'filter': {'name': group_names}})
+            group_list = self._zapi.hostgroup.get({'output': 'extend', 'filter': {'name': group_names}})
             for group in group_list:
                 group_id = group['groupid']
                 group_ids.append({'groupid': group_id})
@@ -355,9 +343,7 @@ class Template(object):
         if template_list is None or len(template_list) == 0:
             return template_ids
         for template in template_list:
-            template_list = self._zapi.template.get(
-                {'output': 'extend',
-                 'filter': {'host': template}})
+            template_list = self._zapi.template.get({'output': 'extend', 'filter': {'host': template}})
             if len(template_list) < 1:
                 continue
             else:
@@ -485,7 +471,7 @@ class Template(object):
             else:
                 return self.load_json_template(dump, omit_date=omit_date)
 
-        except ZabbixAPIException as e:
+        except Exception as e:
             self._module.fail_json(msg='Unable to export template: %s' % e)
 
     def diff_template(self, template_json_a, template_json_b):
@@ -505,7 +491,7 @@ class Template(object):
 
         # Versions older than 2.4 do not support description field within template
         desc_not_supported = False
-        if LooseVersion(self._zapi.api_version()).version[:2] < LooseVersion('2.4').version:
+        if LooseVersion(self._zbx_api_version) < LooseVersion('2.4'):
             desc_not_supported = True
 
         # Filter empty attributes from template object to allow accurate comparison
@@ -612,48 +598,41 @@ class Template(object):
         }
 
         try:
-            # old api version support here
-            api_version = self._zapi.api_version()
             # updateExisting for application removed from zabbix api after 3.2
-            if LooseVersion(api_version).version[:2] <= LooseVersion('3.2').version:
+            if LooseVersion(self._zbx_api_version) <= LooseVersion('3.2'):
                 update_rules['applications']['updateExisting'] = True
 
             # templateLinkage.deleteMissing only available in 4.0 branch higher .16 and higher 4.4.4
             # it's not available in 4.2 branches or lower 4.0.16
-            if LooseVersion(api_version).version[:2] == LooseVersion('4.0').version and \
-               LooseVersion(api_version).version[:3] >= LooseVersion('4.0.16').version:
+            if LooseVersion(self._zbx_api_version).version[:2] == LooseVersion('4.0').version and \
+               LooseVersion(self._zbx_api_version).version[:3] >= LooseVersion('4.0.16').version:
                 update_rules['templateLinkage']['deleteMissing'] = True
-            if LooseVersion(api_version).version[:3] >= LooseVersion('4.4.4').version:
+            if LooseVersion(self._zbx_api_version) >= LooseVersion('4.4.4'):
                 update_rules['templateLinkage']['deleteMissing'] = True
 
             import_data = {'format': template_type, 'source': template_content, 'rules': update_rules}
             self._zapi.configuration.import_(import_data)
-        except ZabbixAPIException as e:
+        except Exception as e:
             self._module.fail_json(msg='Unable to import template', details=to_native(e),
                                    exception=traceback.format_exc())
 
 
 def main():
+    argument_spec = zabbix_utils.zabbix_common_argument_spec()
+    argument_spec.update(dict(
+        template_name=dict(type='str', required=False),
+        template_json=dict(type='json', required=False),
+        template_xml=dict(type='str', required=False),
+        template_groups=dict(type='list', required=False),
+        link_templates=dict(type='list', required=False),
+        clear_templates=dict(type='list', required=False),
+        macros=dict(type='list', required=False),
+        omit_date=dict(type='bool', required=False, default=False),
+        dump_format=dict(type='str', required=False, default='json', choices=['json', 'xml']),
+        state=dict(type='str', default="present", choices=['present', 'absent', 'dump']),
+    ))
     module = AnsibleModule(
-        argument_spec=dict(
-            server_url=dict(type='str', required=True, aliases=['url']),
-            login_user=dict(type='str', required=True),
-            login_password=dict(type='str', required=True, no_log=True),
-            http_login_user=dict(type='str', required=False, default=None),
-            http_login_password=dict(type='str', required=False, default=None, no_log=True),
-            validate_certs=dict(type='bool', required=False, default=True),
-            template_name=dict(type='str', required=False),
-            template_json=dict(type='json', required=False),
-            template_xml=dict(type='str', required=False),
-            template_groups=dict(type='list', required=False),
-            link_templates=dict(type='list', required=False),
-            clear_templates=dict(type='list', required=False),
-            macros=dict(type='list', required=False),
-            omit_date=dict(type='bool', required=False, default=False),
-            dump_format=dict(type='str', required=False, default='json', choices=['json', 'xml']),
-            state=dict(type='str', default="present", choices=['present', 'absent', 'dump']),
-            timeout=dict(type='int', default=10)
-        ),
+        argument_spec=argument_spec,
         required_one_of=[
             ['template_name', 'template_json', 'template_xml']
         ],
@@ -667,15 +646,6 @@ def main():
         supports_check_mode=True
     )
 
-    if not HAS_ZABBIX_API:
-        module.fail_json(msg=missing_required_lib('zabbix-api', url='https://pypi.org/project/zabbix-api/'), exception=ZBX_IMP_ERR)
-
-    server_url = module.params['server_url']
-    login_user = module.params['login_user']
-    login_password = module.params['login_password']
-    http_login_user = module.params['http_login_user']
-    http_login_password = module.params['http_login_password']
-    validate_certs = module.params['validate_certs']
     template_name = module.params['template_name']
     template_json = module.params['template_json']
     template_xml = module.params['template_xml']
@@ -686,18 +656,8 @@ def main():
     omit_date = module.params['omit_date']
     dump_format = module.params['dump_format']
     state = module.params['state']
-    timeout = module.params['timeout']
 
-    zbx = None
-    try:
-        zbx = ZabbixAPI(server_url, timeout=timeout, user=http_login_user, passwd=http_login_password,
-                        validate_certs=validate_certs)
-        zbx.login(login_user, login_password)
-        atexit.register(zbx.logout)
-    except ZabbixAPIException as e:
-        module.fail_json(msg="Failed to connect to Zabbix server: %s" % e)
-
-    template = Template(module, zbx)
+    template = Template(module)
 
     # Identify template names for IDs retrieval
     # Template names are expected to reside in ['zabbix_export']['templates'][*]['template'] for both data types
@@ -727,7 +687,8 @@ def main():
         module.exit_json(changed=True, result="Successfully deleted template %s" % template_name)
 
     elif state == "dump":
-        module.deprecate("The 'dump' state has been deprecated and will be removed, use 'zabbix_template_info' module instead.", version='2.14')
+        module.deprecate("The 'dump' state has been deprecated and will be removed, use 'zabbix_template_info' module instead.",
+                         collection_name="community.zabbix", version='3.0.0')  # was 2.14
         if not template_ids:
             module.fail_json(msg='Template not found: %s' % template_name)
 

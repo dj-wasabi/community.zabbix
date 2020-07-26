@@ -54,22 +54,24 @@ To successfully complete the install the role requires `python-netaddr` on the c
 
 See the following list of supported Operating systems with the Zabbix releases:
 
-| Zabbix  | 4.4 | 4.0 (LTS) | 3.0 (LTS)|
-|---|---|---|---|
-|Red Hat Fam 8| V |   |   |
-|Red Hat Fam 7| V  | V  | V |
-|Red Hat Fam 6|   |   | V |
-|Red Hat Fam 5|   |   | V |
-|Fedora| V  |  V |   |
-|Ubuntu 18.04| V  | V  |   |
-|Ubuntu 16.04| V  | V |   |
-|Ubuntu 14.04| V  | V | V |
-|Debian 10| V  |   |   |
-|Debian 9|  V | V |   |
-|Debian 8| V  | V | V |
-|Debian 7|    | V | V  |
-|macOS 10.15|  V | V |   |
-|macOS 10.14|  V | V |   |
+| Zabbix              | 5.0 | 4.4 | 4.0 (LTS) | 3.0 (LTS) |
+|---------------------|-----|-----|-----------|-----------|
+| Red Hat Fam 8       | V   | V   |           |           |
+| Red Hat Fam 7       | V   | V   | V         | V         |
+| Red Hat Fam 6       | V   |     |           | V         |
+| Red Hat Fam 5       | V   |     |           | V         |
+| Fedora              |     | V   | V         |           |
+| Ubuntu 20.04 focal  | V   |     |           |           |
+| Ubuntu 19.10 eoan   |     |     |           |           |
+| Ubuntu 18.04 bionic | V   | V   | V         |           |
+| Ubuntu 16.04 xenial | V   | V   | V         |           |
+| Ubuntu 14.04 trusty | V   | V   | V         | V         |
+| Debian 10 buster    | V   | V   |           |           |
+| Debian 9 stretch    | V   | V   | V         |           |
+| Debian 8 jessie     | V   | V   | V         | V         |
+| Debian 7 wheezy     |     |     | V         | V         |
+| macOS 10.15         |     | V   | V         |           |
+| macOS 10.14         |     | V   | V         |           |
 
 # Getting started
 
@@ -99,7 +101,7 @@ There are some variables in default/main.yml which can (or need to) be overridde
 
 * `zabbix_agent_serveractive`: The ip address for the zabbix-server or zabbix-proxy for active checks.
 
-* `zabbix_agent_version`: This is the version of zabbix. Default it is 4.4, but can be overridden to one of the versions mentioned in [Zabbix Versions](#zabbix-versions). Previously the variable `zabbix_version` was used directly but it could cause [some inconvenience](https://github.com/dj-wasabi/ansible-zabbix-agent/pull/303). That variable is maintained by retrocompativility.
+* `zabbix_agent_version`: This is the version of zabbix. Default it is 5.0, but can be overridden to one of the versions mentioned in [Zabbix Versions](#zabbix-versions). Previously the variable `zabbix_version` was used directly but it could cause [some inconvenience](https://github.com/dj-wasabi/ansible-zabbix-agent/pull/303). That variable is maintained by retrocompativility.
 
 * `zabbix_repo`: Default: _zabbix_
   * _epel_ install agent from EPEL repo
