@@ -40,7 +40,6 @@ provisioner:
         zabbix_server_mysql_login_user: root
         zabbix_server_mysql_login_password: changeme
         zabbix_server_mysql_login_port: 3306
-        # zabbix_server_mysql_login_unix_socket: /var/run/mysqld/mysqld.sock
       postgresql:
         zabbix_server_database: pgsql
         zabbix_server_database_long: postgresql
@@ -56,3 +55,19 @@ verifier:
   name: testinfra
   lint:
     name: flake8
+
+scenario:
+  test_sequence:
+    - dependency
+    - lint
+    - cleanup
+    - destroy
+    - syntax
+    - create
+    - prepare
+    - converge
+    # - idempotence
+    - side_effect
+    - verify
+    - cleanup
+    - destroy
