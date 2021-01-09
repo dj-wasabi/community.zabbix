@@ -127,14 +127,16 @@
 
   roles:
     - role: geerlingguy.apache
-      when:
-        - zabbix_websrv == "apache"
-    - role: geerlingguy.nginx
-      when:
-        - zabbix_websrv == "nginx"
-    - role: wdijkerman.php
-      when:
-        - ansible_os_family != 'RedHat' or (ansible_os_family == 'RedHat' and ansible_distribution_major_version == "8")
+    - role: geerlingguy.php
+    - role: geerlingguy.apache-php-fpm
+      # when:
+      #   - zabbix_websrv == "apache"
+    # - role: geerlingguy.nginx
+    #   when:
+    #     - zabbix_websrv == "nginx"
+    # - role: wdijkerman.php
+    #   when:
+    #     - ansible_os_family != 'RedHat' or (ansible_os_family == 'RedHat' and ansible_distribution_major_version == "8")
     - role: zabbix_server
 
   post_tasks:
