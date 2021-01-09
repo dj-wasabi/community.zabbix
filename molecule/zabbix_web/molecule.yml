@@ -90,7 +90,8 @@ provisioner:
         zabbix_url: zabbix-web-pgsql-ubuntu20
         zabbix_websrv_servername: zabbix-web-pgsql-ubuntu20
       zabbix-web-mysql-ubuntu20:
-        zabbix_php_fpm_conf_listen: False
+        # zabbix_php_fpm_conf_listen: False
+        php_enable_php_fpm: true
         zabbix_websrv: apache
         zabbix_url: zabbix-web-mysql-ubuntu20
         zabbix_websrv_servername: zabbix-web-mysql-ubuntu20
